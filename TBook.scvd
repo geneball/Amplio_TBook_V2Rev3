@@ -164,6 +164,14 @@
       <event id="0x0102" level="Error"   	property="Fault"   		value="vAct=%x[val1] cfsr=%x[val2]"     							info="Hard Fault"  />
       <event id="0x0103" level="Op"   		property="tbAlloc"    	value="nB=%d[val1] mem=%x[val2] tot=%d[val3]"     					info="tbAlloc"  />
       <event id="0x0104" level="Op"  		property="bootCnt"   	value="bootCnt=%d[val1]"     										info="reboot count"  />
+	  <event id="0x0105" level="API"   		property="wrMsgFile"    value="nch=%d[val1] err=%d[val2]"     								info="write MsgSxMx.txt"  />
+	  <event id="0x0106" level="API"   		property="wrLogFile" 	value="totch=%d[val1] err=%d[val2]"     							info="save flushed log.txt"  />
+	  <event id="0x0107" level="API"   		property="wrAudFile" 	value="nch=%d[val1] err=%d[val2]"     								info="write MsgSxMx.txt"  />
+	  <event id="0x0108" level="API"   		property="wrLnFile"  	value="nch=%d[val1] err=%d[val2]"     								info="write 1 line .txt"  />
+	  <event id="0x0109" level="API"   		property="wrStatFile" 	value="iS=%d[val1] iM=%d[val2] cnt=%d[val3] err=%d[val4]"     		info="write subjSxMx.stat"  />
+	  <event id="0x010A" level="API"   		property="LdStatFile" 	value="iS=%d[val1] iM=%d[val2] "     								info="load subjSxMx.stat"  />
+	  <event id="0x010B" level="Op"   		property="flushLog" 	value="nCh=%d[val1] totLogCh=%d[val2] err=%d[val3] "     			info="flush Log after evtS"  />
+
 <!-- TBaudio -->
 	  <event id="0x0200" level="Detail"		property="loadBuff"   	value="nSamp=%d[val1] ferr=%d[val2] buffN=%d[val3]"     			info="loadBuff fread()"  />
       <event id="0x0201" level="Detail"   	property="DMACompl"   	value="cnt=%d[val1] ferr=%d[val2]"     								info="SAIComplete fread"  />
@@ -179,9 +187,11 @@
 	  <event id="0x020b" level="API"   		property="audAdjVol"    value="by %d[val1] to %d[val2]"     								info="audio adj volume"  />
 	  <event id="0x020c" level="API"   		property="audAdjPos"    value="by %d[val1]sec"     							 				info="audio adj position"  />
 	  <event id="0x020d" level="API"   		property="audAdjSpd"    value="by %d[val1]"     							 				info="audio adj speed"  />
+	  <event id="0x020e" level="API"   		property="audRecWv"    	value=""     							 							info="audio startRecording"  />
       <event id="0x020f" level="Op"   		property="stRecord"   	value=""		       	 											info="start audio record"  />
-      <event id="0x0210" level="Op"   		property="AudRecClose"  value="nSamp=%d[val1]"     								            info="audio record file close"  />
+      <event id="0x0210" level="Op"   		property="AudRecClose"  value="nSamp=%d[val1] buffnum=%d[val2] err=%d[val3]"     			info="audio record file close"  />
       <event id="0x0211" level="Op"   		property="AudRecDone"   value="elapsedms=%d[val1] calcms=%d[val2]"		      	  			info="audio record done"  />
+      <event id="0x0212" level="Op"   		property="wrRecBuff"    value="nSamp=%d[val1] totSamp=%d[val2] nB=%d[val3]"		    	  	info="audio record buffer written"  />
 
 
 <!-- TBsai -->
@@ -200,7 +210,8 @@
       <event id="0x0310" level="Detail"   	property="saiPLYDN"  	value="saiPLYDN"     												info="SAI file done"  />
       <event id="0x0311" level="Op"   		property="akSpkEn"    	value="spkrEn=%d[val1]"     										info="akSpeaker enable"  />
       <event id="0x0312" level="Detail"		property="saiRcv "   	value="nBytes=%d[val1]"     										info="saiReceive"  />
-      <event id="0x0313" level="Detail"   	property="saiRXDN"  	value="saiRXDN"     												info="SAI buffer rcv done"  />
+      <event id="0x0313" level="Detail"   	property="saiRXDN"  	value="fullBuf=%x[val1]"     										info="SAI buffer rcv done"  />
+      <event id="0x0314" level="Detail"   	property="relBuff"  	value="buf=%x[val1]"     											info="free buffer"  />
 
 <!-- TBcsm -->
 	  <event id="0x0400" level="Op"   		property="chgState"   	value="%t[val1]"     												info="CSM change state"  />

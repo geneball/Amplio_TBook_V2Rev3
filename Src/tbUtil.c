@@ -262,7 +262,8 @@ static uint32_t lastTmStmp = 0;
 static uint32_t lastHalTick = 0, HalSameCnt = 0;
  
 uint32_t 								tbTimeStamp(){																	// return msecs since boot
-	lastTmStmp =  osKernelGetTickCount();
+	if ( osKernelGetState()==osKernelRunning ) 
+		lastTmStmp =  osKernelGetTickCount();
 	return lastTmStmp;
 }
 int 										delayReq, actualDelay;

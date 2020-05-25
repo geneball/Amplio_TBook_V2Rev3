@@ -81,6 +81,7 @@ static int											eCnt = 0;
 static int 											reinitCnt = 0;	
 
 static int 											LastVolume 	= DEFAULT_VOLUME;			// retain last setting, so audio restarts at last volume
+static int WatchReg = 16;  // -1;
 
 void 						Codec_WrReg( uint8_t Reg, uint8_t Value);		// FORWARD
 
@@ -174,7 +175,7 @@ void						I2C_Reinit(int lev ){			// lev&1 SWRST, &2 => RCC reset, &4 => device 
 	}
 	if ( lev & 2 ){
 		RCC->APB1RSTR |= RCC_APB1RSTR_I2C1RST;		// set device reset bit for I2C1
-		tbDelay_ms( 1 );
+		tbDelay_ms( 3 );  //DEBUG 1 );
 		RCC->APB1RSTR = 0;		// TURN OFF device reset bit for I2C1
 /* reset sequence in PowerControl( ARM_POWER_FULL )
         __HAL_RCC_I2C1_FORCE_RESET();
@@ -185,7 +186,7 @@ void						I2C_Reinit(int lev ){			// lev&1 SWRST, &2 => RCC reset, &4 => device 
 	if ( lev & 1 ){
 		uint32_t cr1 = I2C1->CR1;
 		I2C1->CR1 = I2C_CR1_SWRST;			// set Software Reset bit
-		tbDelay_ms(1);
+		tbDelay_ms(3 );  //DEBUG 1);
 		I2C1->CR1 = cr1;			// reset to previous
 	}
 }
@@ -213,7 +214,8 @@ uint8_t 				Codec_RdReg( uint8_t Reg ){																	// return value of codec
 	if ( waitCnt > MaxBusyWaitCnt ) MaxBusyWaitCnt = waitCnt;
 	cntErr( I2C_Xmt, ARM_I2C_EVENT_TRANSFER_DONE, I2C_Event, 0, 5 );  // err if any other bits set
 	
-//	dbgLog( " R%x:%02x \n", Reg, value );
+	if ( Reg==WatchReg ) 
+		dbgLog( " R%x:%02x \n", Reg, value );
 	if ( Reg < AK_NREGS )
 		akR.reg[ Reg ] = akC.reg[ Reg ] = value;
 	return value;
@@ -221,8 +223,9 @@ uint8_t 				Codec_RdReg( uint8_t Reg ){																	// return value of codec
 #endif
 
 void 						Codec_WrReg( uint8_t Reg, uint8_t Value){										// write codec register Reg with Value
-if (PlayDBG & 0x10) return;		//PlayDBG: TABLE=x1 POT=x2 PLUS=x4 MINUS=x8 STAR=x10 TREE=x20 -- if STAR, no I2C
-dbgEvt( TB_akWrReg, Reg,Value,0,0);
+	dbgEvt( TB_akWrReg, Reg,Value,0,0);
+	if ( Reg==WatchReg ) 
+		dbgLog( "Wr R%x:%02x \n", Reg, Value );
 
 	uint32_t status;
 	int waitCnt = 0;
@@ -319,7 +322,7 @@ void 						ak_SpeakerEnable( bool enable ){														// enable/disable speak
 			akR.R.PwrMgmt1.PMDAC = 1;							// 6) Power up DAC
 		  akR.R.PwrMgmt2.PMSL = 1;							// 7) set spkr power ON
 			akUpd();															// UPDATE all settings
-			tbDelay_ms( 30 );											// 7) wait up to 300ms   // MARC 11)
+			tbDelay_ms( 300 );   //DEBUG 30 );											// 7) wait up to 300ms   // MARC 11)
 			akR.R.SigSel1.SLPSN = 1;							// 8) exit power-save (mute) mode (==1)
 			akUpd();		
 		#endif
@@ -349,20 +352,20 @@ void						ak_PowerUp( void ){
 	gSet( gBOOT1_PDN, 1 );  // OUT: set power_down ACTIVE to so codec doesn't try to PowerUP
 	gSet( gEN_5V, 1 );			// OUT: 1 to supply 5V to codec		AP6714 EN		
 	gSet( gEN1V8, 1 );		  // OUT: 1 to supply 1.8 to codec  TLV74118 EN		
-	tbDelay_ms( 20 ); 		 	// wait for voltage regulators
+	tbDelay_ms( 40 );  //DEBUG 20 ); 		 	// wait for voltage regulators
 	
 	gSet( gBOOT1_PDN, 0 );  //  set power_down INACTIVE to Power on the codec 
-	tbDelay_ms(5); 		 			//  wait for it to start up
+	tbDelay_ms( 10 );  //DEBUG 5 ); 		 			//  wait for it to start up
 }
 // external interface functions
 void 						ak_Init( ){ 																								// Init codec & I2C (i2s_stm32f4xx.c)
-dbgEvt( TB_akInit, 0,0,0,0);
+	dbgEvt( TB_akInit, 0,0,0,0);
 
 	akFmtVolume 	= 0;			// reset static state
+	memset( &akC, 0, sizeof(AK4637_Registers));
 	akSpeakerOn 	= false;
 	akMuted			 	= false;
 
-if (PlayDBG & 0x10) return;		//PlayDBG: TABLE=x1 POT=x2 PLUS=x4 MINUS=x8 STAR=x10 TREE=x20 -- if STAR, no I2C
 	ak_PowerUp(); 		// power-up codec
   I2C_Init();  			// powerup & Initialize the Control interface of the Audio Codec
 
@@ -460,6 +463,8 @@ void		 				ak_SetVolume( uint8_t Volume ){														// sets volume 0..100%  
 	uint8_t v = Volume>100? 100 : Volume; 
 
 	LastVolume = v;
+	if ( audGetState() != Playing ) return;			// wait till next ak_Init() to write to codec 
+	
 	// Conversion of volume from user scale [0:100] to audio codec AK4343 scale  [akMUTEVOL..akMAXVOL] == 0xCC..0x18 
   //   values >= 0xCC force mute on AK4637
   //   limit max volume to 0x18 == 0dB (to avoid increasing digital level-- causing resets?)
@@ -516,10 +521,10 @@ void						ak_SetMasterFreq( int freq ){															// set AK4637 to MasterMod
 		akR.R.PwrMgmt2.M_S 			= 1;					// M/S = 1   WS CLOCK WILL START HERE!
 		akR.R.PwrMgmt1.PMVCM 		= 1;					// set VCOM bit first, then individual blocks (at SpeakerEnable)
 		akUpd();															// update power & M/S
-		tbDelay_ms( 2 );											// 2ms for power regulator to stabilize
+		tbDelay_ms( 4 );  //DEBUG 2 );											// 2ms for power regulator to stabilize
 		akR.R.PwrMgmt2.PMPLL 		= 1;					// enable PLL 
 		akUpd();															// start PLL 
-		tbDelay_ms( 5 );											// 5ms for clocks to stabilize
+		tbDelay_ms( 10 );  //DEBUG 5 );											// 5ms for clocks to stabilize
 	#endif
 }
 
